@@ -1,57 +1,46 @@
 const express = require('express');
+const { create } = require('express-handlebars');
 const app = express();
 
-// Setting up middleware to parse URL-encoded data (form data)
+// Set up Handlebars as the template engine
+const hbs = create({ extname: '.hbs', defaultLayout: 'main' });
+app.engine('hbs', hbs.engine);
+app.set('view engine', 'hbs');
+
+// Middleware to parse form data
 app.use(express.urlencoded({ extended: true }));
 
 // Helper function for validation
 const validateFormData = (username, password) => {
-    // Username: required, only Latin characters, exactly 5 characters
     const usernameRegex = /^[a-zA-Z]{5}$/;
-
-    // Password: required, only digits, exactly 6 characters
     const passwordRegex = /^[0-9]{6}$/;
 
     if (!username || !password) {
         return 'Both fields are required.';
     }
-
     if (!usernameRegex.test(username)) {
         return 'Username must be exactly 5 Latin letters (a-z, A-Z).';
     }
-
     if (!passwordRegex.test(password)) {
         return 'Password must be exactly 6 digits (0-9).';
     }
-
-    return null; // No validation errors
+    return null;
 };
 
 // Route to display the form
 app.get('/', (req, res) => {
-    res.send(`
-        <h1>User Login</h1>
-        <form method="POST" action="/submit">
-            <label for="username">Username:</label><br>
-            <input type="text" id="username" name="username" value="${req.query.username || ''}" required><br><br>
-            <label for="password">Password:</label><br>
-            <input type="password" id="password" name="password" required><br><br>
-            <button type="submit">Submit</button>
-            ${req.query.error ? `<p style="color:red;">${decodeURIComponent(req.query.error)}</p>` : ''}
-        </form>
-    `);
+    res.render('form', { error: null, username: '' });
 });
 
 // Route to handle form submission via POST
 app.post('/submit', (req, res) => {
     const { username, password } = req.body;
 
-    // Validate form data
     const validationError = validateFormData(username, password);
 
     if (validationError) {
-        // If validation fails, redirect back to the form with the error message and prefilled values
-        return res.redirect(`/?error=${encodeURIComponent(validationError)}&username=${encodeURIComponent(username)}`);
+        // If validation fails, render the form with error and previously entered values
+        return res.render('form', { error: validationError, username });
     }
 
     // If validation passes, redirect to the success page with the username
@@ -61,15 +50,11 @@ app.post('/submit', (req, res) => {
 // Route to display the success page without the form
 app.get('/success', (req, res) => {
     const username = req.query.username;
-    res.send(`
-        <h1>Form Submission Successful</h1>
-        <p>Username: ${username}</p>
-        <p>Your form was submitted successfully!</p>
-    `);
+    res.render('success', { username });
 });
 
 // Start the server
-const PORT = process.env.PORT || 7580;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
