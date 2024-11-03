@@ -1,11 +1,18 @@
 const express = require('express');
-const { create } = require('express-handlebars');
+const path = require('path');
+const exphbs = require('express-handlebars');
 const app = express();
 
-// Set up Handlebars as the template engine
-const hbs = create({ extname: '.hbs', defaultLayout: 'main' });
-app.engine('hbs', hbs.engine);
+app.engine(
+    'hbs',
+    exphbs({
+        extname: '.hbs',
+        layoutsDir: path.join(__dirname, 'views', 'layouts'),
+        defaultLayout: 'main',
+    })
+);
 app.set('view engine', 'hbs');
+app.set('views', path.join(__dirname, 'views'));
 
 // Middleware to parse form data
 app.use(express.urlencoded({ extended: true }));
